@@ -1,9 +1,6 @@
 import logo from "./logo.svg";
 import { useEffect, useState } from "react";
 import Web3 from "web3";
- 
- import "./gallery.css"
-
 
 import "./App.css";
 import { couldStartTrivia } from "typescript";
@@ -62,9 +59,63 @@ function App() {
     },
   ];
 
-  // const pweb3 = new Web3("https://matic-mumbai.chainstacklabs.com");
-  // const random = new pweb3.eth.Contract(ABI, contractAddress);
+  const NODE_URL = "node url";
+  const provider = new Web3.providers.HttpProvider(NODE_URL);
+  const web3 = new Web3(provider);
+  const PUBLIC_KEY = "key";
+  const PRIVATE_KEY = "privatekey";
 
+  const randomContract = new web3.eth.Contract(ABI, contractAddress);
+
+  async function getnum() {
+    //const nonce = await web3.eth.getTransactionCount(PUBLIC_KEY, "latest"); // get latest nonce
+    const gasEstimate = await randomContract.methods
+      .getRandomNumber()
+      .estimateGas(); // estimate gas
+
+    // Create the transaction
+    const tx = {
+      from: PUBLIC_KEY,
+      to: contractAddress,
+      //nonce: nonce,
+      gas: gasEstimate,
+      data: randomContract.methods.getRandomNumber().encodeABI(),
+    };
+
+    const signPromise = web3.eth.accounts.signTransaction(tx, PRIVATE_KEY);
+
+    signPromise
+      .then((signedTx) => {
+        web3.eth.sendSignedTransaction(
+          signedTx.rawTransaction,
+          function (err, hash) {
+            if (!err) {
+              console.log("The hash of your transaction is: ", hash);
+            } else {
+              console.log(
+                "Something went wrong when submitting your transaction:",
+                err
+              );
+            }
+          }
+        );
+      })
+      .catch((err) => {
+        console.log("Promise failed:", err);
+      });
+  }
+
+  async function shownum() {
+    await getnum();
+    const num = await randomContract.methods.randomResult().call();
+    console.log(num);
+
+    return num;
+  }
+
+  const rn = shownum();
+
+  //console.log(rn);
   // pweb3.eth.accounts
   //   .signTransaction(
   //     {
@@ -106,62 +157,60 @@ function App() {
   //   console.log(num);
   // }
 
-  const [imgdata, setdata] = useState([]);
+  //   const [imgdata, setdata] = useState([]);
 
-  const getData = async () => {
-    //const options = { method: "GET" };
+  //   const getData = async () => {
+  //     //const options = { method: "GET" };
 
-    const options = { method: "GET" };
+  //     const options = { method: "GET" };
 
-    fetch(
-      "https://api.opensea.io/api/v1/assets?&order_by=sale_count&order_direction=desc&offset=5&limit=50",
-      options
-    )
-      .then((response) => response.json())
-      .then((response) => {
-        //console.log(response.assets[0].permalink);
+  //     fetch(
+  //       "https://api.opensea.io/api/v1/assets?&order_by=sale_count&order_direction=desc&offset=5&limit=50",
+  //       options
+  //     )
+  //       .then((response) => response.json())
+  //       .then((response) => {
+  //         //console.log(response.assets[0].permalink);
 
-        var data = response.assets.map((item) => {
-          return {
-            img: item.image_preview_url,
-            link: item.permalink,
-          };
-        });
-        setdata(data);
-        
-        
-        //console.log(imgdata);
+  //         var data = response.assets.map((item) => {
+  //           return {
+  //             img: item.image_preview_url,
+  //             link: item.permalink,
+  //           };
+  //         });
+  //         setdata(data);
 
-        // const imglinks = g.map((item) => {
-        //   imgurls.push(item.image_url);
-        // });
+  //         //console.log(imgdata);
 
-        //console.log(imgurls);
+  //         // const imglinks = g.map((item) => {
+  //         //   imgurls.push(item.image_url);
+  //         // });
 
-        //console.log(response.collections[100].stats['one_day_volume']);
-      })
+  //         //console.log(imgurls);
 
-      .catch((err) => console.error(err));
-  };
- var showd;
-  useEffect(() => {
-  getData();
-  
-  }, []);
+  //         //console.log(response.collections[100].stats['one_day_volume']);
+  //       })
 
-  useEffect(() => {
-  //console.log(imgdata);
-  showd =imgdata;
-  console.log(showd[0]);
-  }, [imgdata]);
-//console.log(imgdata);
+  //       .catch((err) => console.error(err));
+  //   };
+  //  var showd;
+  //   useEffect(() => {
+  //   getData();
 
-  
+  //   }, []);
+
+  //   useEffect(() => {
+  //   //console.log(imgdata);
+  //   showd =imgdata;
+  //   console.log(showd[0]);
+  //   }, [imgdata]);
+  // //console.log(imgdata);
 
   return (
     <div className="App">
       NFT Gallery
-      
+      <button onClick={shownum}>get num</button>
+      {/*       
             <div className ="gallery">
                {
                  imgdata.map((item,index) =>{
@@ -174,8 +223,7 @@ function App() {
                    )
                  })
                } 
-            </div>
-      
+            </div> */}
     </div>
   );
 }
